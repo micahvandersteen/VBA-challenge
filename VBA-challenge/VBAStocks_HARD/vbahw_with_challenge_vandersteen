@@ -1,0 +1,169 @@
+' Author: Micah Vandersteen
+' This script is intended to loop through all the stocks for
+' one year for each run and obtain:
+' the ticker, annual change, percent annual change, and total volume.
+' The script also provides conditional formatting that will
+' highlight positive change in green and negative in red.
+
+Sub annualStocks():
+
+' creating column headers for desired information---------------------
+
+Range("I1").Value = "Ticker Symbol"
+Range("J1").Value = "Yearly Change"
+Range("K1").Value = "Percent Change"
+Range("L1").Value = "Total Volume"
+
+' defining variables----------------------------------------------
+
+' defining the ticker variable
+Dim ticker As Variant
+
+' defining the yearly change variable
+Dim yearlyChange As Double
+
+' defining the yearly percent change variable
+Dim percentChange As Double
+
+' defining the stock total volume
+Dim totalVolume As Variant
+    totalVolume = 0
+
+' defining the iteration variable
+Dim i As Variant
+
+Dim lastRow As Variant ' variable for finding last row of given ticker
+    lastRow = ActiveSheet.Cells(Rows.Count, 1).End(xlUp).Row ' finding amount of rows
+
+Dim summaryRow As Variant
+    summaryRow = 2
+   
+Dim day As String
+
+Dim openPrice As Variant
+
+Dim closePrice As Variant
+   
+' For loop to run through the full year for each stock-------------------------
+
+' intializing for loop from row 2 to the last row
+For i = 2 To lastRow
+    
+    ' creating a way to identify dates, ignoring the year
+    'makes the date a string
+    day = Cells(i, 2).Value
+    
+    'removes year from the string
+    dDay = Right(day, 4)
+    
+    'identifies opening price on january first of each stock
+    If (dDay = "0101") Then
+        openPrice = Cells(i, 3).Value
+    End If
+    
+    ' initializing conditional to check when stock ticker changes
+    If (Cells(i + 1, 1).Value <> Cells(i, 1).Value) Then
+        
+        ' set ticker name and placing the ticker into the summary position
+        ticker = Cells(i, 1).Value
+        Range("I" & summaryRow).Value = ticker '
+        
+        ' gets total volume of stock and places total volume into summary position
+        totalVolume = totalVolume + Cells(i, 7).Value
+        Range("L" & summaryRow).Value = totalVolume
+        
+        ' get closing priceat end of year
+        closePrice = Cells(i, 6).Value
+        
+        ' get yearly change
+        yearlyChange = closePrice - openPrice
+        Range("J" & summaryRow).Value = yearlyChange
+        
+        'get percent change
+        If (openPrice <> 0) Then
+            percentChange = (closePrice / openPrice) * 100 - 100
+            Range("K" & summaryRow).Value = percentChange
+        Else
+            MsgBox ("For" & ticker & "the open price is zero at the beginning of the year and a percent change cannot be calculated.")
+        End If
+        
+        ' using conditional to format such that positive change is a green cell and negtive change is a red cell
+        If (percentChange > 0) Then
+            Range("K" & summaryRow).Interior.ColorIndex = 4
+            Range("J" & summaryRow).Interior.ColorIndex = 4
+        ElseIf (percentChange < 0) Then
+            Range("K" & summaryRow).Interior.ColorIndex = 3
+            Range("J" & summaryRow).Interior.ColorIndex = 3
+        End If
+                
+         '  increments summary row position for next ticker
+        summaryRow = summaryRow + 1
+        
+        ' resets total volume for the next ticker
+        totalVolume = 0
+        
+    Else
+    
+        totalVolume = totalVolume + Cells(i, 7).Value
+        
+    End If
+    
+    
+Next i
+
+
+' Bonus loop for greatest % increase, % decrease, and total volume -------------------------------------
+
+Dim lastSummaryRow As Integer
+    lastSummaryRow = ActiveSheet.Cells(Rows.Count, 10).End(xlUp).Row
+    
+' finding min/max percent changes---------------------
+
+' setting percent change column as variable
+Dim percentChangeSummary As Range
+    Set percentChangeSummary = Range("K2:K" & Rows.Count)
+   
+ ' setting volume column as a range variable
+Dim volumeSummary As Range
+    Set volumeSummary = Range("L2:L" & Rows.Count)
+    
+    ' min change
+Dim greatestPercentDecrease As Variant
+    greatestPercentDecrease = Application.WorksheetFunction.Min(percentChangeSummary)
+    Range("N2").Value = "Greatest Percent Decrease"
+    Range("O2").Value = greatestPercentDecrease
+    
+    ' max change
+Dim greatestPercentIncrease As Variant
+    greatestPercentIncrease = Application.WorksheetFunction.Max(percentChangeSummary)
+    Range("N3").Value = "Greatest Percent Increase"
+    Range("O3").Value = greatestPercentIncrease
+    
+    ' greatest total volume
+Dim greatestTotalVolume As Variant
+    greatestTotalVolume = Application.WorksheetFunction.Max(volumeSummary)
+    Range("N4").Value = "Greatest Total Volume"
+    Range("O4").Value = greatestTotalVolume
+
+' labeling summary table ticker column
+Range("P1").Value = "Ticker Symbol"
+' Loop with conditionals to find ticker for each min and max summary stat
+For i = 2 To lastSummaryRow
+
+    summaryTicker = Cells(i, 9).Value
+    
+    If (Cells(i, 12).Value = greatestTotalVolume) Then
+        Range("P4").Value = summaryTicker
+    End If
+    
+    If (Cells(i, 11).Value = greatestPercentIncrease) Then
+        Range("P3").Value = summaryTicker
+    End If
+    
+    If (Cells(i, 11).Value = greatestPercentDecrease) Then
+        Range("P2").Value = summaryTicker
+    End If
+    
+ Next i
+ 
+End Sub
